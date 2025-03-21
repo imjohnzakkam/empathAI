@@ -69,7 +69,6 @@ const EmotionVisualizer = ({
         .sort((a, b) => b.percentage - a.percentage)
         .slice(0, 5);
       
-      console.log("Formatted emotions:", formatted);
       return formatted.length > 0 ? formatted : defaultEmotions;
     } catch (error) {
       console.error("Error formatting emotions:", error);

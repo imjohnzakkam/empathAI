@@ -24,6 +24,12 @@ EmpathAI is an advanced AI system that combines visual emotion recognition, voic
   - Seamless integration of webcam and microphone
   - Beautiful and responsive design
 
+- **Session Management**
+  - Unique session IDs for each therapy conversation
+  - Persistent sessions with sharable/bookmarkable URLs
+  - Dynamic routing with clean URL structure (/session/{uuid})
+  - Automatic session creation
+
 ## Technical Architecture
 
 EmpathAI is built using a modern tech stack with clear separation of concerns:
@@ -34,6 +40,8 @@ EmpathAI is built using a modern tech stack with clear separation of concerns:
 - **Animation**: Framer Motion for fluid transitions
 - **Media Capture**: react-webcam and react-mic for camera/audio input
 - **State Management**: React hooks and context for local state
+- **Routing**: Next.js dynamic routes for session management
+- **Markdown Support**: Rich text formatting in AI responses
 
 ### Backend (Python/FastAPI)
 - **API Layer**: FastAPI for high-performance endpoints
@@ -43,6 +51,7 @@ EmpathAI is built using a modern tech stack with clear separation of concerns:
   - Text: Transformer models for sentiment analysis
 - **Knowledge Graph**: Structured data of therapeutic techniques
 - **Response Generation**: Contextual AI responses based on emotional inputs
+- **Session Handling**: Support for session persistence and retrieval
 
 ### System Architecture Diagram
 
@@ -151,6 +160,15 @@ The response generation system combines:
 - Contextual information from the conversation history
 
 The result is personalized, empathetic responses that address the user's emotional needs.
+
+### Session Management
+
+The system implements a RESTful approach to therapy sessions:
+- Each therapy session is assigned a unique UUID
+- Sessions are accessible via clean URLs (/session/{uuid})
+- The homepage redirects to new sessions when "Start Therapy Session" is clicked
+- Session IDs are included in API requests to enable future persistence
+- Session URLs can be bookmarked or shared for continuity of care
 
 ## Ethical Considerations
 

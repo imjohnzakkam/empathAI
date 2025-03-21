@@ -3,6 +3,16 @@
 import Header from '@/components/ui/Header';
 import HomePage from '@/components/home/HomePage';
 
+/**
+ * Home page component for EmpathAI
+ * 
+ * This page displays the landing content with information about EmpathAI
+ * and a demo of the emotion analysis feature.
+ * 
+ * When the user clicks "Start Therapy Session", the HomePage component
+ * will generate a new UUID and redirect to /session/{uuid} using Next.js
+ * dynamic routing. This creates a unique, shareable URL for each therapy session.
+ */
 export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
