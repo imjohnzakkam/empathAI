@@ -1,0 +1,1 @@
+# Empty __init__.py file to make the response_generator directory a Python package 
