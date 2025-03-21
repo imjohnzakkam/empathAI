@@ -2,21 +2,38 @@
 
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import { debounce } from 'lodash';
 import EmotionVisualizer from '../emotion/EmotionVisualizer';
 
 interface HomePageProps {
-  onStartSession: () => void;
+  onStartSession?: () => void; // Make this optional since we'll handle navigation internally
 }
 
 const HomePage: React.FC<HomePageProps> = ({ onStartSession }) => {
+  const router = useRouter();
   const [demoText, setDemoText] = useState<string>('');
   const [emotions, setEmotions] = useState<Record<string, number>>({
     "neutral": 0.9,
     "calm": 0.1
   });
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+
+  // Function to start a new therapy session
+  const startNewSession = () => {
+    // Generate a new UUID for the session
+    const sessionId = uuidv4();
+    
+    // If the parent component wants to handle the session start, call its callback
+    if (onStartSession) {
+      onStartSession();
+    } else {
+      // Otherwise, navigate to the new session route
+      router.push(`/session/${sessionId}`);
+    }
+  };
 
   // Debounced function for real-time emotion analysis
   const analyzeEmotions = useRef(
@@ -86,7 +103,7 @@ const HomePage: React.FC<HomePageProps> = ({ onStartSession }) => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           className="btn-primary text-lg px-8 py-3"
-          onClick={onStartSession}
+          onClick={startNewSession}
         >
           Start Therapy Session
         </motion.button>

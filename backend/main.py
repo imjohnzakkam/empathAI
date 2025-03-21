@@ -50,15 +50,20 @@ response_generator = ResponseGenerator(llm_provider=llm_provider, llm_model=llm_
 # Data models
 class TextInput(BaseModel):
     text: str
-    user_id: Optional[str] = None
+    session_id: Optional[str] = None
+
+class TextAnalysisResponse(BaseModel):
+    detected_emotions: Dict[str, float]
+    response_text: str
+    session_id: Optional[str] = None
+
+class EmotionAnalysisResponse(BaseModel):
+    detected_emotions: Dict[str, float]
     session_id: Optional[str] = None
 
 class MultimodalResponse(BaseModel):
     detected_emotions: dict
     response_text: str
-
-class EmotionAnalysisResponse(BaseModel):
-    detected_emotions: dict
 
 class LLMConfigResponse(BaseModel):
     current_provider: Optional[str] = None
@@ -81,93 +86,60 @@ async def get_llm_config():
         "is_using_llm": response_generator.use_llm
     }
 
-@app.post("/analyze/text", response_model=MultimodalResponse)
-async def analyze_text(text_input: TextInput):
-    """
-    Analyze emotions in text and generate a therapeutic response.
-    
-    Args:
-        text_input: Text content and session information
+@app.post("/analyze/text", response_model=TextAnalysisResponse)
+async def analyze_text(input_data: TextInput):
+    try:
+        # Analyze emotions in text
+        emotions = text_analyzer.analyze(input_data.text)
         
-    Returns:
-        Detected emotions and therapeutic response
-    """
-    if not text_input.text:
-        raise HTTPException(status_code=400, detail="Text content is required")
-    
-    # Analyze emotions in text
-    emotions = text_analyzer.analyze(text_input.text)
-    
-    # Get recommended therapeutic techniques
-    recommended_techniques = knowledge_graph.get_techniques_for_emotions(emotions)
-    
-    # Generate response
-    response = response_generator.generate(
-        text_input.text,
-        emotions,
-        recommended_techniques,
-        text_input.user_id,
-        text_input.session_id
-    )
-    
-    return {
-        "detected_emotions": emotions,
-        "response_text": response
-    }
+        # Generate response using the emotion analysis
+        response = response_generator.generate_response(input_data.text, emotions)
+        
+        return {
+            "detected_emotions": emotions,
+            "response_text": response,
+            "session_id": input_data.session_id
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error analyzing text: {str(e)}")
 
 @app.post("/analyze/text/emotions", response_model=EmotionAnalysisResponse)
-async def analyze_text_emotions(text_input: TextInput):
-    """
-    Analyze emotions in text without generating a response.
-    This is used for real-time emotion analysis as the user types.
-    
-    Args:
-        text_input: Text content
+async def analyze_text_emotions(input_data: TextInput):
+    try:
+        # Only analyze emotions in text
+        emotions = text_analyzer.analyze(input_data.text)
         
-    Returns:
-        Detected emotions only
-    """
-    if not text_input.text:
-        raise HTTPException(status_code=400, detail="Text content is required")
-    
-    # Analyze emotions in text
-    emotions = text_analyzer.analyze(text_input.text)
-    
-    return {
-        "detected_emotions": emotions
-    }
+        return {
+            "detected_emotions": emotions,
+            "session_id": input_data.session_id
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error analyzing emotions in text: {str(e)}")
 
-@app.post("/analyze/audio", response_model=MultimodalResponse)
+@app.post("/analyze/audio", response_model=TextAnalysisResponse)
 async def analyze_audio(
     audio_file: UploadFile = File(...),
-    text: str = Form(None),
-    user_id: Optional[str] = Form(None),
+    text: Optional[str] = Form(None),
     session_id: Optional[str] = Form(None)
 ):
     """
-    Analyze emotions in audio recording and generate a therapeutic response.
+    Analyze emotions in an audio recording and generate a therapeutic response.
     
     Args:
         audio_file: Audio recording
-        text: Transcribed text (optional)
-        user_id: User ID (optional)
+        text: Text content (optional)
         session_id: Session ID (optional)
         
     Returns:
         Detected emotions and therapeutic response
     """
-    if not audio_file:
-        raise HTTPException(status_code=400, detail="Audio file is required")
-    
-    # Load audio data
-    audio_bytes = await audio_file.read()
-    
     try:
-        # Convert audio bytes to numpy array
-        with io.BytesIO(audio_bytes) as audio_io:
-            audio_array, sample_rate = sf.read(audio_io)
-            
-        # Analyze emotions in audio
+        # Read audio file
+        audio_content = await audio_file.read()
+        audio_buffer = io.BytesIO(audio_content)
+        audio_array, sample_rate = sf.read(audio_buffer)
+        
+        # Analyze audio emotions
         audio_emotions = audio_analyzer.analyze_audio(audio_array, sample_rate)
         
         # If text is provided, also analyze text emotions
@@ -184,21 +156,13 @@ async def analyze_audio(
         else:
             combined_emotions = audio_emotions
         
-        # Get recommended therapeutic techniques
-        recommended_techniques = knowledge_graph.get_techniques_for_emotions(combined_emotions)
-        
-        # Generate response
-        response = response_generator.generate(
-            text or "",
-            combined_emotions,
-            recommended_techniques,
-            user_id,
-            session_id
-        )
+        # Generate response using the emotion analysis
+        response = response_generator.generate_response(text or "", combined_emotions)
         
         return {
             "detected_emotions": combined_emotions,
-            "response_text": response
+            "response_text": response,
+            "session_id": session_id
         }
         
     except Exception as e:

@@ -16,10 +16,9 @@ interface Message {
     emotions?: Record<string, number>;
 }
 
-interface TherapySessionProps {
-    setSessionActive: (active: boolean) => void;
-    onEmotionsUpdate?: (emotions: Record<string, number>) => void;
-    onAnalyzingStateChange?: (isAnalyzing: boolean) => void;
+interface TextAnalysisPayload {
+    text: string;
+    session_id?: string;
 }
 
 interface LLMConfig {
@@ -28,10 +27,18 @@ interface LLMConfig {
     is_using_llm: boolean;
 }
 
+interface TherapySessionProps {
+    setSessionActive: (active: boolean) => void;
+    onEmotionsUpdate?: (emotions: Record<string, number>) => void;
+    onAnalyzingStateChange?: (isAnalyzing: boolean) => void;
+    sessionId?: string;
+}
+
 const TherapySession: React.FC<TherapySessionProps> = ({ 
     setSessionActive,
     onEmotionsUpdate,
-    onAnalyzingStateChange 
+    onAnalyzingStateChange,
+    sessionId
 }) => {
     const [messages, setMessages] = useState<Message[]>([
         { id: '1', text: "Hello, I'm your empathetic AI assistant. How are you feeling today?", sender: 'ai' }
@@ -221,14 +228,25 @@ const TherapySession: React.FC<TherapySessionProps> = ({
                 if (inputText.trim()) {
                     formData.append('text', inputText.trim());
                 }
+                // Add session ID if available
+                if (sessionId) {
+                    formData.append('session_id', sessionId);
+                }
                 
                 response = await axios.post(`${apiUrl}/analyze/audio`, formData);
                 setAudioBlob(null);
             } else {
                 // Send just text
-                response = await axios.post(`${apiUrl}/analyze/text`, {
+                const payload: TextAnalysisPayload = {
                     text: inputText.trim()
-                });
+                };
+                
+                // Add session ID if available
+                if (sessionId) {
+                    payload.session_id = sessionId;
+                }
+                
+                response = await axios.post(`${apiUrl}/analyze/text`, payload);
             }
             
             const aiMessage: Message = {
@@ -258,6 +276,17 @@ const TherapySession: React.FC<TherapySessionProps> = ({
             sendMessage();
         }
     };
+    
+    // Log session ID on component mount
+    useEffect(() => {
+        if (sessionId) {
+            console.log(`Therapy session initialized with ID: ${sessionId}`);
+            
+            // Here you could load previous messages if this is a returning session
+            // For example:
+            // loadPreviousMessages(sessionId);
+        }
+    }, [sessionId]);
     
     return (
         <div className="flex flex-col h-full bg-gray-50">

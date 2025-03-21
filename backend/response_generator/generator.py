@@ -923,3 +923,25 @@ Keep your response concise (100-200 words).<|im_end|>
             Dictionary of provider information
         """
         return LLM_PROVIDERS 
+
+    def generate_response(self, text, emotions, techniques=None, user_id=None, session_id=None):
+        """
+        Alias for the generate method to maintain backward compatibility with updated API endpoints.
+        
+        Args:
+            text: User message text
+            emotions: Dictionary of detected emotions
+            techniques: Optional therapeutic techniques to incorporate
+            user_id: Optional user ID
+            session_id: Optional session ID
+            
+        Returns:
+            Generated therapeutic response text
+        """
+        if not techniques:
+            # If techniques aren't provided, get them from the knowledge graph
+            from knowledge_graph.graph import TherapeuticKnowledgeGraph
+            knowledge_graph = TherapeuticKnowledgeGraph()
+            techniques = knowledge_graph.get_techniques_for_emotions(emotions)
+            
+        return self.generate(text, emotions, techniques, user_id, session_id) 
